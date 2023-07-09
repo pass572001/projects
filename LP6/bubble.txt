@@ -1,0 +1,87 @@
+#include <omp.h>
+#include <stdlib.h>
+#include <array>
+#include <chrono>
+#include <functional>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+void s_bubble(int*, int);
+void p_bubble(int*, int);
+void swap(int&, int&);
+
+void s_bubble(int* a, int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        int first = i % 2;
+        for (int j = first; j < n - 1; j += 2)
+    // int* b = new int[n];
+    // copy(a, a + n, b);
+        {
+            if (a[j] > a[j + 1])
+            {
+                swap(a[j], a[j + 1]);
+            }
+        }
+    }
+}
+
+void p_bubble(int* a, int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        int first = i % 2;
+#pragma omp parallel for shared(a, first) num_threads(2)
+        for (int j = first; j < n - 1; j += 2)
+        {
+            if (a[j] > a[j + 1])
+            {
+                swap(a[j], a[j + 1]);
+            }
+        }
+    }
+}
+
+void swap(int& a, int& b)
+{
+    int test;
+    test = a;
+    a = b;
+    b = test;
+}
+
+int main()
+{
+    int *a, n;
+	cout << "Specify array length.\n";
+	cin >> n;
+	a = new int[n];
+	
+	//creating array of random number for testing purpose
+	for (int i = 0; i < n; i++) {
+		a[i] = rand() % n;
+	}
+	
+	cout << "Generated random array of length " << n << "\n\n";
+	
+	double startTime = omp_get_wtime();
+	s_bubble(a,n);
+	double endTime = omp_get_wtime();
+	float seq = endTime - startTime;
+	
+	cout << "Sequential Bubble sort: " << seq << "s\n";
+	
+	startTime = omp_get_wtime();
+	omp_set_num_threads(2);
+	p_bubble(a,n);
+	endTime = omp_get_wtime();
+
+	float par = endTime - startTime;
+	cout << "Parallel (2) Bubble sort: "<< par << "s\n";
+
+	return 0;
+}
